@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Rooms — ChatSync{% endblock %}
+{% block content %}
+<div class="lobby-page">
+  <header class="lobby-header">
+    <div class="auth-logo">
+      <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+        <rect width="40" height="40" rx="12" fill="#6366f1"/>
+        <path d="M10 14h20M10 20h14M10 26h17" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <span>ChatSync</span>
+    </div>
+    <div class="lobby-user">
+      <div class="avatar">{{ request.user.username|first|upper }}</div>
+      <span>{{ request.user.username }}</span>
+      <a href="{% url 'logout' %}" class="btn btn--ghost btn--sm">Logout</a>
+    </div>
+  </header>
+
+  <main class="lobby-main">
+    <div class="lobby-hero">
+      <h1>Chat Rooms</h1>
+      <p>Ek room choose karein ya naya banayein</p>
+    </div>
+
+    <div class="room-grid">
+      {% for room in rooms %}
+      <a href="{% url 'room' room %}" class="room-card">
+        <div class="room-card__icon">
+          {% if room == 'general' %}💬
+          {% elif room == 'tech' %}💻
+          {% elif room == 'random' %}🎲
+          {% elif room == 'project' %}📋
+          {% else %}#{% endif %}
+        </div>
+        <div class="room-card__info">
+          <h3># {{ room }}</h3>
+          <p>Join the conversation</p>
+        </div>
+        <div class="room-card__arrow">→</div>
+      </a>
+      {% endfor %}
+    </div>
+
+    <!-- Custom room -->
+    <div class="custom-room">
+      <h2>Custom Room</h2>
+      <form method="get" action="" id="custom-room-form">
+        <div class="custom-room__input">
+          <span>#</span>
+          <input type="text" id="custom-room-name" placeholder="room-ka-naam" pattern="[a-zA-Z0-9]+"
+                 title="Sirf letters aur numbers" maxlength="30">
+          <button type="submit" class="btn btn--primary">Join →</button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('custom-room-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const name = document.getElementById('custom-room-name').value.trim();
+  if (name) window.location.href = '/room/' + name + '/';
+});
+</script>
+{% endblock %}

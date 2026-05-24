@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}#{{ room_name }} — ChatSync{% endblock %}
+
+{% block content %}
+<div class="chat-app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar__header">
+      <a href="{% url 'lobby' %}" class="sidebar__back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Rooms
+      </a>
+    </div>
+    <div class="sidebar__room">
+      <span class="room-badge">#</span>
+      <strong>{{ room_name }}</strong>
+    </div>
+
+    <!-- Online members -->
+    <div class="sidebar__section">
+      <p class="sidebar__label">Online</p>
+      <ul id="members-list" class="members-list"></ul>
+    </div>
+
+    <!-- Tab switcher -->
+    <div class="sidebar__tabs">
+      <button class="tab-btn active" onclick="switchTab('chat')">💬 Chat</button>
+      <button class="tab-btn" onclick="switchTab('notes')">📝 Notes</button>
+    </div>
+
+    <div class="sidebar__footer">
+      <div class="avatar sidebar-avatar">{{ username|first|upper }}</div>
+      <span class="sidebar__username">{{ username }}</span>
+      <a href="{% url 'logout' %}" class="btn btn--ghost btn--xs">Out</a>
+    </div>
+  </aside>
+
+  <!-- Chat Panel -->
+  <main class="chat-panel" id="chat-panel">
+    <div class="chat-panel__header">
+      <h2># {{ room_name }}</h2>
+      <div class="connection-status" id="conn-status">
+        <span class="status-dot status-dot--connecting"></span>
+        Connecting...
+      </div>
+    </div>
+
+    <!-- Messages area -->
+    <div class="messages" id="messages">
+      <div class="messages__welcome">
+        <div class="messages__welcome-icon">👋</div>
+        <p><strong>#{{ room_name }}</strong> room mein khosh amdeed!</p>
+        <p>WebSocket connected hote hi messages real-time aayenge.</p>
+      </div>
+    </div>
+
+    <!-- Typing indicator -->
+    <div class="typing-bar" id="typing-bar" style="display:none">
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+      <span id="typing-text"></span>
+    </div>
+
+    <!-- Input area -->
+    <div class="chat-input-area">
+      <div class="chat-input-wrap">
+        <input type="text" id="msg-input" class="chat-input"
+               placeholder="Message likhein... (Enter = send)"
+               autocomplete="off" maxlength="2000">
+        <button id="send-btn" class="btn btn--send" title="Send">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Collaboration Notes Panel -->
+  <aside class="notes-panel" id="notes-panel" style="display:none">
+    <div class="notes-panel__header">
+      <h3>📝 Shared Notes</h3>
+      <p class="notes-hint">Sab milke real-time edit kar sakte hain</p>
+    </div>
+    <textarea id="collab-notes" class="collab-notes"
+              placeholder="Ye notes sab room members ke liye sync hote hain...&#10;&#10;Meeting agenda, ideas, links — sab kuch yahan likhein."></textarea>
+    <div class="notes-footer">
+      <span id="notes-status" class="notes-status">✓ Synced</span>
+      <span class="notes-hint-sm">Typing karte hi sync hota hai</span>
+    </div>
+  </aside>
+
+</div>
+
+<!-- Pass data to JS -->
+<script>
+  const ROOM_NAME = "{{ room_name }}";
+  const USERNAME  = "{{ username }}";
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/chat.js' %}"></script>
+{% endblock %}

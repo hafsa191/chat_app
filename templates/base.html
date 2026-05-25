@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
+  {% load static %}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}ChatSync{% endblock %}</title>
-  {% load static %}
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
   {% if messages %}
@@ -17,13 +17,16 @@
       {% endfor %}
     </div>
   {% endif %}
+
   {% block content %}{% endblock %}
+
   <script>
-    // Toast auto-hide
     setTimeout(() => {
       document.querySelectorAll('.toast').forEach(t => t.style.opacity = '0');
     }, 3000);
   </script>
+
   {% block scripts %}{% endblock %}
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

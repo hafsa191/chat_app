@@ -1,103 +1,114 @@
 {% extends 'base.html' %}
-{% load static %}
-{% block title %}#{{ room_name }} — ChatSync{% endblock %}
-
 {% block content %}
-<div class="chat-app">
+
+<!-- JS ke liye hidden data -->
+<script id="room-name"    type="application/json">"{{ room_name }}"</script>
+<script id="current-user" type="application/json">"{{ request.user.username }}"</script>
+<script id="current-uid"  type="application/json">{{ request.user.id }}</script>
+
+<!-- Live Cursor Overlay -->
+<div id="cursor-overlay"></div>
+
+<!-- Pinned Message Bar -->
+<div id="pinned-bar" style="display:none"></div>
+
+<!-- Main Layout -->
+<div class="room-wrapper">
 
   <!-- Sidebar -->
   <aside class="sidebar">
-    <div class="sidebar__header">
-      <a href="{% url 'lobby' %}" class="sidebar__back">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-        Rooms
-      </a>
+    <div class="room-title">
+      <span class="room-hash">#</span> {{ room_name }}
     </div>
-    <div class="sidebar__room">
-      <span class="room-badge">#</span>
-      <strong>{{ room_name }}</strong>
-    </div>
-
-    <!-- Online members -->
-    <div class="sidebar__section">
-      <p class="sidebar__label">Online</p>
-      <ul id="members-list" class="members-list"></ul>
-    </div>
-
-    <!-- Tab switcher -->
-    <div class="sidebar__tabs">
-      <button class="tab-btn active" onclick="switchTab('chat')">💬 Chat</button>
-      <button class="tab-btn" onclick="switchTab('notes')">📝 Notes</button>
-    </div>
-
-    <div class="sidebar__footer">
-      <div class="avatar sidebar-avatar">{{ username|first|upper }}</div>
-      <span class="sidebar__username">{{ username }}</span>
-      <a href="{% url 'logout' %}" class="btn btn--ghost btn--xs">Out</a>
-    </div>
+    <div class="online-label">Online</div>
+    <div id="online-list"></div>
+    <hr>
+    <button id="theme-toggle" class="theme-btn" title="Theme switch">🌙</button>
+    <a href="{% url 'lobby' %}" class="leave-btn">← Rooms</a>
   </aside>
 
-  <!-- Chat Panel -->
-  <main class="chat-panel" id="chat-panel">
-    <div class="chat-panel__header">
-      <h2># {{ room_name }}</h2>
-      <div class="connection-status" id="conn-status">
-        <span class="status-dot status-dot--connecting"></span>
-        Connecting...
+  <!-- Main Panel -->
+  <main class="main-panel">
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="chat">💬 Chat</button>
+      <button class="tab-btn" data-tab="code">💻 Code</button>
+      <button class="tab-btn" data-tab="notes">📝 Notes</button>
+      <button class="tab-btn" data-tab="polls">📊 Polls</button>
+    </div>
+
+    <!-- CHAT PANEL -->
+    <div class="tab-panel" id="panel-chat" style="display:flex; flex-direction:column; flex:1;">
+      <div id="chat-log" class="chat-log"></div>
+      <div id="typing-indicator" class="typing-ind" style="display:none"></div>
+      <div id="reply-bar" class="reply-bar" style="display:none"></div>
+      <div class="input-area">
+        <textarea id="message-input" class="msg-input"
+          placeholder="Message likhein... (Enter = send, Shift+Enter = newline)"
+          rows="2"></textarea>
+        <div class="input-buttons">
+          <button id="send-btn" class="btn-primary">Send ↑</button>
+          <button id="create-poll-btn" class="btn-secondary">📊 Poll</button>
+        </div>
       </div>
     </div>
 
-    <!-- Messages area -->
-    <div class="messages" id="messages">
-      <div class="messages__welcome">
-        <div class="messages__welcome-icon">👋</div>
-        <p><strong>#{{ room_name }}</strong> room mein khosh amdeed!</p>
-        <p>WebSocket connected hote hi messages real-time aayenge.</p>
+    <!-- CODE EDITOR PANEL -->
+    <div class="tab-panel" id="panel-code" style="display:none; flex-direction:column; flex:1;">
+      <div class="code-header">
+        <span id="code-editor-label">💻 Live Code Editor</span>
+        <select id="code-lang" class="lang-select">
+          <option value="javascript">JavaScript</option>
+          <option value="python">Python</option>
+          <option value="html">HTML</option>
+          <option value="css">CSS</option>
+        </select>
+        <button id="run-code-btn" class="btn-run">▶ Run (JS only)</button>
+      </div>
+      <textarea id="code-editor" class="code-editor" spellcheck="false"
+        placeholder="// Yahan code likhein — sab milke dekhein real-time!"></textarea>
+      <div class="code-output-label">Output:</div>
+      <pre id="code-preview" class="code-output"></pre>
+    </div>
+
+    <!-- NOTES PANEL -->
+    <div class="tab-panel" id="panel-notes" style="display:none; flex-direction:column; flex:1;">
+      <div class="notes-header">📝 Shared Notes — sab milke edit karein</div>
+      <textarea id="notes-area" class="notes-area"
+        placeholder="Yahan notes likhein. Sab ke screen pe real-time update hoga..."></textarea>
+    </div>
+
+    <!-- POLLS PANEL -->
+    <div class="tab-panel" id="panel-polls" style="display:none; flex-direction:column; flex:1;">
+      <div class="polls-header">📊 Room Polls</div>
+      <div id="polls-list">
+        <p class="empty-state">Koi poll nahi abhi. Chat tab se banao!</p>
       </div>
     </div>
 
-    <!-- Typing indicator -->
-    <div class="typing-bar" id="typing-bar" style="display:none">
-      <div class="typing-dots"><span></span><span></span><span></span></div>
-      <span id="typing-text"></span>
-    </div>
-
-    <!-- Input area -->
-    <div class="chat-input-area">
-      <div class="chat-input-wrap">
-        <input type="text" id="msg-input" class="chat-input"
-               placeholder="Message likhein... (Enter = send)"
-               autocomplete="off" maxlength="2000">
-        <button id="send-btn" class="btn btn--send" title="Send">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
-      </div>
-    </div>
   </main>
-
-  <!-- Collaboration Notes Panel -->
-  <aside class="notes-panel" id="notes-panel" style="display:none">
-    <div class="notes-panel__header">
-      <h3>📝 Shared Notes</h3>
-      <p class="notes-hint">Sab milke real-time edit kar sakte hain</p>
-    </div>
-    <textarea id="collab-notes" class="collab-notes"
-              placeholder="Ye notes sab room members ke liye sync hote hain...&#10;&#10;Meeting agenda, ideas, links — sab kuch yahan likhein."></textarea>
-    <div class="notes-footer">
-      <span id="notes-status" class="notes-status">✓ Synced</span>
-      <span class="notes-hint-sm">Typing karte hi sync hota hai</span>
-    </div>
-  </aside>
-
 </div>
 
-<!-- Pass data to JS -->
-<script>
-  const ROOM_NAME = "{{ room_name }}";
-  const USERNAME  = "{{ username }}";
-</script>
+<!-- Poll Modal -->
+<div id="poll-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3>📊 Naya Poll Banao</h3>
+    <input id="poll-question" type="text" placeholder="Sawaal likhein..." class="modal-input">
+    <div id="poll-options-container">
+      <input type="text" class="poll-option-input modal-input" placeholder="Option 1...">
+      <input type="text" class="poll-option-input modal-input" placeholder="Option 2...">
+    </div>
+    <button id="poll-add-option" class="btn-secondary">+ Option Add karo</button>
+    <div class="modal-actions">
+      <button id="poll-submit" class="btn-primary">Poll Banao</button>
+      <button id="poll-cancel" class="btn-ghost">Cancel</button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
-{% block scripts %}
-<script src="{% static 'js/chat.js' %}"></script>
+{% block extra_js %}
+<script src="/static/js/chat.js"></script>
 {% endblock %}
